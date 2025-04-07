@@ -1,4 +1,4 @@
-const Education = require("../model/education");
+const Education = require("../model/Education");
 
 const getAllEducation = async (req, res) => {
   try {
