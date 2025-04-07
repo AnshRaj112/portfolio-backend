@@ -4,6 +4,7 @@ const cors = require("cors");
 const contactRoute = require("./routes/contactRoute");
 const educationRoutes = require("./routes/educationRoute.js");
 const connectDB = require("./config/db");
+const experienceRoutes = require("./routes/experience.js");
 
 const app = express();
 connectDB();
@@ -37,6 +38,7 @@ if (!MONGO_URL) {
 // ✅ Routes
 app.use("/contact", contactRoute);
 app.use("/education", educationRoutes);
+app.use("/experience", experienceRoutes);
 
 // ✅ Global error handling
 app.use((err, req, res, next) => {
