@@ -7,6 +7,7 @@ const connectDB = require("./config/db");
 const experienceRoutes = require("./routes/experience.js");
 const projectRoutes = require("./routes/projectRoute.js");
 const skillRoutes = require("./routes/skillRoutes.js");
+const researchRoutes = require("./routes/researchRoutes");
 
 const app = express();
 connectDB();
@@ -43,6 +44,7 @@ app.use("/education", educationRoutes);
 app.use("/experience", experienceRoutes);
 app.use("/projects", projectRoutes);
 app.use("/skills", skillRoutes);
+app.use("/research", researchRoutes);
 
 
 app.get("/ping", (req, res) => {
