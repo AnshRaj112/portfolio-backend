@@ -1,15 +1,15 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const contactRoute = require("./routes/contactRoute");
-const educationRoutes = require("./routes/educationRoute.js");
 const connectDB = require("./config/db");
+const educationRoutes = require("./routes/educationRoute.js");
 const experienceRoutes = require("./routes/experience.js");
 const projectRoutes = require("./routes/projectRoute.js");
 const skillRoutes = require("./routes/skillRoutes.js");
 const researchRoutes = require("./routes/researchRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
 const certificationRoutes = require("./routes/certificationRoutes");
+const contactRoute = require("./routes/contactRoute");
 
 const app = express();
 connectDB();
@@ -49,6 +49,7 @@ app.use("/skills", skillRoutes);
 app.use("/research", researchRoutes);
 app.use("/testimonials", testimonialRoutes);
 app.use("/certification", certificationRoutes);
+app.use("/contact", contactRoute);
 
 
 app.get("/ping", (req, res) => {
