@@ -10,6 +10,7 @@ const researchRoutes = require("./routes/researchRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
 const certificationRoutes = require("./routes/certificationRoutes");
 const contactRoute = require("./routes/contactRoute");
+const newsletterRoutes = require("./routes/newsletterRoute");
 
 const app = express();
 connectDB();
@@ -49,7 +50,9 @@ app.use("/skills", skillRoutes);
 app.use("/research", researchRoutes);
 app.use("/testimonials", testimonialRoutes);
 app.use("/certification", certificationRoutes);
+app.use("/subscribe", newsletterRoutes);
 
+require("./mediumWatcher");
 
 app.get("/ping", (req, res) => {
   res.send("pong");
