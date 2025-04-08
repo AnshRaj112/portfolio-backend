@@ -9,6 +9,7 @@ const projectRoutes = require("./routes/projectRoute.js");
 const skillRoutes = require("./routes/skillRoutes.js");
 const researchRoutes = require("./routes/researchRoutes");
 const testimonialRoutes = require("./routes/testimonialRoutes");
+const certificationRoutes = require("./routes/certificationRoutes");
 
 const app = express();
 connectDB();
@@ -47,6 +48,7 @@ app.use("/projects", projectRoutes);
 app.use("/skills", skillRoutes);
 app.use("/research", researchRoutes);
 app.use("/testimonials", testimonialRoutes);
+app.use("/certification", certificationRoutes);
 
 
 app.get("/ping", (req, res) => {
