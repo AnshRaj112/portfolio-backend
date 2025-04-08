@@ -42,6 +42,12 @@ app.use("/education", educationRoutes);
 app.use("/experience", experienceRoutes);
 app.use("/projects", projectRoutes)
 
+// Express example
+app.get("/ping", (req, res) => {
+  res.send("pong");
+});
+
+
 // ✅ Global error handling
 app.use((err, req, res, next) => {
   console.error("🔥 Server Error:", err);
