@@ -49,7 +49,6 @@ app.use("/skills", skillRoutes);
 app.use("/research", researchRoutes);
 app.use("/testimonials", testimonialRoutes);
 app.use("/certification", certificationRoutes);
-app.use("/contact", contactRoute);
 
 
 app.get("/ping", (req, res) => {
