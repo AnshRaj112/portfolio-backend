@@ -5,7 +5,8 @@ const contactRoute = require("./routes/contactRoute");
 const educationRoutes = require("./routes/educationRoute.js");
 const connectDB = require("./config/db");
 const experienceRoutes = require("./routes/experience.js");
-const projectRoutes = require("./routes/projectRoute.js")
+const projectRoutes = require("./routes/projectRoute.js");
+const skillRoutes = require("./routes/skillRoutes.js");
 
 const app = express();
 connectDB();
@@ -40,9 +41,10 @@ if (!MONGO_URL) {
 app.use("/contact", contactRoute);
 app.use("/education", educationRoutes);
 app.use("/experience", experienceRoutes);
-app.use("/projects", projectRoutes)
+app.use("/projects", projectRoutes);
+app.use("/skills", skillRoutes);
 
-// Express example
+
 app.get("/ping", (req, res) => {
   res.send("pong");
 });
