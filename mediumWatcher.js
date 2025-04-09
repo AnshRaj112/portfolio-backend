@@ -14,8 +14,8 @@ const SENT_CACHE_FILE = "./sentPosts.json";
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.FROM_EMAIL,
+    pass: process.env.GOOGLE_APP_PASSWORD,
   },
 });
 
@@ -44,7 +44,7 @@ async function sendNewsletter(post) {
 
   subscribers.forEach((sub) => {
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: process.env.FROM_EMAIL,
       to: sub.email,
       subject: `📰 New Blog: ${post.title}`,
       html,
