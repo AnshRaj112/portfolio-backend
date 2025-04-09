@@ -20,11 +20,13 @@ const transporter = nodemailer.createTransport({
 });
 
 // Connect to Mongo
-mongoose.connect(process.env.MONGO_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log("✅ MongoDB connected for Medium watcher"))
-  .catch(err => console.error("MongoDB error:", err));
+mongoose
+  .connect(process.env.MONGO_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB connected for Medium watcher"))
+  .catch((err) => console.error("MongoDB error:", err));
 
 // Load sent posts
 let sentPosts = [];
@@ -42,19 +44,29 @@ async function sendNewsletter(post) {
     <p><a href="${post.link}">Read the full article →</a></p>
   `;
 
-  subscribers.forEach((sub) => {
+  for (let i = 0; i < subscribers.length; i++) {
+    const sub = subscribers[i];
+
     const mailOptions = {
-      from: process.env.FROM_EMAIL,
+      from: `"Ansh Raj" <${process.env.FROM_EMAIL}>`,
       to: sub.email,
       subject: `📰 New Blog: ${post.title}`,
       html,
     };
 
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) console.error("❌ Email failed to", sub.email, err);
-      else console.log("✅ Sent to", sub.email);
-    });
-  });
+    try {
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ Sent to ${sub.email} (${i + 1}/${subscribers.length})`);
+    } catch (err) {
+      console.error(`❌ Email failed to ${sub.email}`, err);
+    }
+
+    // Wait 5 minutes between each send, unless it's the last one
+    if (i < subscribers.length - 1) {
+      console.log("⏳ Waiting 5 minutes before next email...");
+      await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000)); // 5 minutes
+    }
+  }
 }
 
 async function checkMediumFeed() {
