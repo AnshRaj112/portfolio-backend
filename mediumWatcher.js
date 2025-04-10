@@ -3,8 +3,11 @@ const nodemailer = require("nodemailer");
 const fs = require("fs");
 const cron = require("node-cron");
 const mongoose = require("mongoose");
+const { execSync } = require("child_process");
 const Subscriber = require("./model/Subscriber");
 require("dotenv").config();
+const EMAIL_TEMPLATE_PATH = "./template/emailTemplate.html";
+const emailTemplateContent = fs.readFileSync(EMAIL_TEMPLATE_PATH, "utf-8");
 
 const parser = new Parser();
 const FEED_URL = process.env.MEDIUM_FEED;
@@ -41,15 +44,43 @@ let sendProgress = fs.existsSync(PROGRESS_FILE)
   ? JSON.parse(fs.readFileSync(PROGRESS_FILE, "utf-8"))
   : null;
 
+// Call Python script to get summary with fallback support
+function getSummary(url) {
+  const commands = [
+    `py summarizer.py "${url}"`,
+    `python summarizer.py "${url}"`,
+    `python3 summarizer.py "${url}"`,
+  ];
+
+  for (let cmd of commands) {
+    try {
+      console.log(`🔁 Trying command: ${cmd}`);
+      const output = execSync(cmd, { encoding: "utf-8" });
+      console.log("✅ Summary generated using:", cmd.split(" ")[0]);
+      return output.trim();
+    } catch (err) {
+      console.warn(`⚠️ Failed using ${cmd.split(" ")[0]}:`, err.message);
+    }
+  }
+
+  console.error("❌ All summary methods failed.");
+  return "Summary not available.";
+}
+
+// Load and render email template
+function loadEmailTemplate(post, summary) {
+  return emailTemplateContent
+    .replace("{{title}}", post.title)
+    .replace("{{summary}}", summary)
+    .replace("{{link}}", post.link);
+}
+
 async function sendNewsletter(post) {
   const subscribers = await Subscriber.find({});
   if (subscribers.length === 0) return console.log("⚠️ No subscribers");
 
-  const html = `
-    <h2>🆕 New Medium Post: ${post.title}</h2>
-    <p>${post.contentSnippet}</p>
-    <p><a href="${post.link}">Read the full article →</a></p>
-  `;
+  const summary = getSummary(post.link);
+  const html = loadEmailTemplate(post, summary);
 
   const startIndex = sendProgress?.postId === post.guid ? sendProgress.lastIndex + 1 : 0;
 
@@ -66,8 +97,6 @@ async function sendNewsletter(post) {
     try {
       await transporter.sendMail(mailOptions);
       console.log(`✅ Sent to ${sub.email} (${i + 1}/${subscribers.length})`);
-
-      // Save progress
       fs.writeFileSync(PROGRESS_FILE, JSON.stringify({ postId: post.guid, lastIndex: i }));
     } catch (err) {
       console.error(`❌ Email failed to ${sub.email}`, err);
@@ -79,10 +108,9 @@ async function sendNewsletter(post) {
     }
   }
 
-  // Clean up after finishing
   sentPosts.push(post.guid);
   fs.writeFileSync(SENT_CACHE_FILE, JSON.stringify(sentPosts));
-  fs.unlinkSync(PROGRESS_FILE); // Remove progress file
+  if (fs.existsSync(PROGRESS_FILE)) fs.unlinkSync(PROGRESS_FILE);
 }
 
 async function checkMediumFeed() {

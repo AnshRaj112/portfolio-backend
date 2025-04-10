@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #352f36;
+      --text: #ffffff;
+      --primary: #ff4c4c;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #352f36;
+        --text: #ffffff;
+        --primary: #ff4c4c;
+      }
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+
+    .container {
+      background: #2e293a;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      max-width: 600px;
+      margin: auto;
+    }
+
+    h2 {
+      color: var(--primary);
+      font-size: 1.8rem;
+    }
+
+    p {
+      line-height: 1.6;
+    }
+
+    .btn {
+      display: inline-block;
+      background: #ff4c4c;
+      color: white;
+      padding: 12px 20px;
+      text-decoration: none;
+      border-radius: 6px;
+      margin-top: 20px;
+      transition: background 0.3s ease;
+    }
+
+    .btn:hover {
+      background: #ff4c4c;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+
+      .btn {
+        padding: 10px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🆕 {{title}}</h2>
+    <p>{{summary}}</p>
+    <a href="{{link}}" class="btn">Read Full Article</a>
+  </div>
+</body>
+</html>
