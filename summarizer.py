@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 import json
 from dotenv import load_dotenv
 import google.generativeai as genai
-import openai  # Used for Groq fallback
+import openai  # Groq fallback
 
 load_dotenv()
 
@@ -13,25 +13,39 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 SUMMARY_CACHE_FILE = "summary_cache.json"
 
-# Load cache if exists
+# Load summary cache
+summary_cache = {}
 if os.path.exists(SUMMARY_CACHE_FILE):
-    with open(SUMMARY_CACHE_FILE, "r") as f:
-        summary_cache = json.load(f)
-else:
-    summary_cache = {}
+    try:
+        with open(SUMMARY_CACHE_FILE, "r") as f:
+            summary_cache = json.load(f)
+    except json.JSONDecodeError:
+        print("⚠️ Summary cache is corrupted. Starting fresh.")
 
-# Configure Gemini
+# Gemini config
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Configure Groq
+# Groq config
 openai.api_key = GROQ_API_KEY
 openai.api_base = "https://api.groq.com/openai/v1"
 openai.api_type = "openai"
 openai.api_version = None
 
+# Prompt used for both summarizers
+SUMMARY_PROMPT = (
+    "Write a concise and engaging summary of the blog post suitable for an email newsletter. "
+    "Begin with a short friendly greeting. Highlight the main ideas and key points clearly using brief paragraphs or bullet points. "
+    "Use **bold** for emphasis and *italic* where appropriate to improve readability. "
+    "The tone should be professional yet approachable, and the summary should be informative without including any call to action or subject line."
+)
+
 def fetch_article_text(url):
     try:
-        response = requests.get(url, timeout=10)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (compatible; NewsletterBot/1.0)"
+        }
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
         soup = BeautifulSoup(response.text, "html.parser")
         paragraphs = soup.find_all("p")
         return "\n".join(p.get_text() for p in paragraphs if p.get_text().strip())[:10000]
@@ -42,12 +56,8 @@ def fetch_article_text(url):
 def summarize_with_gemini(text):
     try:
         model = genai.GenerativeModel("gemini-2.0-flash")
-        prompt = (
-            "Summarize the blog post in a concise, engaging tone for an email newsletter without giving subject. "
-            "Keep key points short and formatted. Use **bold** and *italic* where helpful."
-        )
-        response = model.generate_content(f"{prompt}\n\n{text}")
-        return response.text.strip()
+        response = model.generate_content(f"{SUMMARY_PROMPT}\n\n{text}")
+        return getattr(response, "text", "").strip()
     except Exception as e:
         print("⚠️ Gemini summarization failed:", e)
         return None
@@ -57,13 +67,7 @@ def summarize_with_groq(text):
         response = openai.ChatCompletion.create(
             model="llama3-70b-8192",
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Summarize the blog post in a concise, newsletter-friendly way. "
-                        "Use **bold** for key points and *italic* for emphasis. Markdown allowed."
-                    ),
-                },
+                {"role": "system", "content": SUMMARY_PROMPT},
                 {"role": "user", "content": text},
             ],
         )
@@ -73,8 +77,11 @@ def summarize_with_groq(text):
         return "Summary unavailable."
 
 def save_cache():
-    with open(SUMMARY_CACHE_FILE, "w") as f:
-        json.dump(summary_cache, f, indent=2)
+    try:
+        with open(SUMMARY_CACHE_FILE, "w") as f:
+            json.dump(summary_cache, f, indent=2)
+    except Exception as e:
+        print("⚠️ Could not save summary cache:", e)
 
 def get_summary(url):
     if url in summary_cache:
