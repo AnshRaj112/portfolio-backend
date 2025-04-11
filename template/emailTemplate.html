@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     :root {
-      --bg: #352f36;
-      --text: #ffffff;
+      --bg: #ffffff;
+      --text: #2e293a;
       --primary: #ff4c4c;
     }
 
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #352f36;
+        --bg: #2e293a;
         --text: #ffffff;
         --primary: #ff4c4c;
       }
@@ -27,12 +27,13 @@
     }
 
     .container {
-      background: #2e293a;
+      background: var(--bg);
       padding: 30px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       max-width: 600px;
       margin: auto;
+      border: 1px solid #ccc;
     }
 
     h2 {
@@ -44,10 +45,18 @@
       line-height: 1.6;
     }
 
-    .btn {
+    strong {
+      font-weight: bold;
+    }
+
+    em {
+      font-style: italic;
+    }
+
+    a.btn {
       display: inline-block;
-      background: #ff4c4c;
-      color: white;
+      background: var(--primary);
+      color: white !important;
       padding: 12px 20px;
       text-decoration: none;
       border-radius: 6px;
@@ -55,8 +64,8 @@
       transition: background 0.3s ease;
     }
 
-    .btn:hover {
-      background: #ff4c4c;
+    a.btn:hover {
+      background: #b71c1c;
     }
 
     @media (max-width: 600px) {
@@ -68,7 +77,7 @@
         font-size: 1.5rem;
       }
 
-      .btn {
+      a.btn {
         padding: 10px 16px;
       }
     }
@@ -77,7 +86,9 @@
 <body>
   <div class="container">
     <h2>🆕 {{title}}</h2>
-    <p>{{summary}}</p>
+    <div>
+      {{summary}} 
+    </div>
     <a href="{{link}}" class="btn">Read Full Article</a>
   </div>
 </body>

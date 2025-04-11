@@ -6,6 +6,9 @@ const mongoose = require("mongoose");
 const { execSync } = require("child_process");
 const Subscriber = require("./model/Subscriber");
 require("dotenv").config();
+const { JSDOM } = require("jsdom");
+const createDOMPurify = require("dompurify");
+const marked = require("marked");
 const EMAIL_TEMPLATE_PATH = "./template/emailTemplate.html";
 const emailTemplateContent = fs.readFileSync(EMAIL_TEMPLATE_PATH, "utf-8");
 
@@ -24,6 +27,9 @@ const transporter = nodemailer.createTransport({
     pass: process.env.GOOGLE_APP_PASSWORD,
   },
 });
+
+const window = new JSDOM("").window;
+const DOMPurify = createDOMPurify(window);
 
 // Connect to Mongo
 mongoose
@@ -68,10 +74,12 @@ function getSummary(url) {
 }
 
 // Load and render email template
-function loadEmailTemplate(post, summary) {
+function loadEmailTemplate(post, summaryMarkdown) {
+  const summaryHTML = marked.parse(summaryMarkdown);
+  const cleanHTML = DOMPurify.sanitize(summaryHTML); 
   return emailTemplateContent
     .replace("{{title}}", post.title)
-    .replace("{{summary}}", summary)
+    .replace("{{summary}}", cleanHTML)
     .replace("{{link}}", post.link);
 }
 
