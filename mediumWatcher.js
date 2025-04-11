@@ -76,12 +76,13 @@ function loadEmailTemplate(post, summary) {
 }
 
 async function sendNewsletter(post) {
-  const subscribers = await Subscriber.find({});
+  let subscribers = await Subscriber.find({});
   if (subscribers.length === 0) return console.log("⚠️ No subscribers");
 
   const summary = getSummary(post.link);
   const html = loadEmailTemplate(post, summary);
 
+  const sentEmails = new Set();
   const startIndex = sendProgress?.postId === post.guid ? sendProgress.lastIndex + 1 : 0;
 
   for (let i = startIndex; i < subscribers.length; i++) {
@@ -97,6 +98,7 @@ async function sendNewsletter(post) {
     try {
       await transporter.sendMail(mailOptions);
       console.log(`✅ Sent to ${sub.email} (${i + 1}/${subscribers.length})`);
+      sentEmails.add(sub.email);
       fs.writeFileSync(PROGRESS_FILE, JSON.stringify({ postId: post.guid, lastIndex: i }));
     } catch (err) {
       console.error(`❌ Email failed to ${sub.email}`, err);
@@ -104,7 +106,36 @@ async function sendNewsletter(post) {
 
     if (i < subscribers.length - 1) {
       console.log("⏳ Waiting 5 minutes before next email...");
-      await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000)); // 5 mins
+      await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000));
+    }
+  }
+
+  // Check for new subscribers after original run
+  const finalSubs = await Subscriber.find({});
+  const finalEmails = finalSubs.map((s) => s.email);
+
+  const missedEmails = finalEmails.filter(email => !sentEmails.has(email));
+  if (missedEmails.length) {
+    console.log(`🔁 Sending missed emails to ${missedEmails.length} new/missed subscriber(s)...`);
+    for (let email of missedEmails) {
+      const mailOptions = {
+        from: `"Ansh Raj" <${process.env.FROM_EMAIL}>`,
+        to: email,
+        subject: `📰 New Blog: ${post.title}`,
+        html,
+      };
+
+      try {
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ Sent to missed/new: ${email}`);
+      } catch (err) {
+        console.error(`❌ Retry failed for ${email}`, err);
+      }
+
+      if (email !== missedEmails[missedEmails.length - 1]) {
+        console.log("⏳ Waiting 5 minutes before next retry...");
+        await new Promise((resolve) => setTimeout(resolve, 5 * 60 * 1000));
+      }
     }
   }
 
@@ -112,6 +143,7 @@ async function sendNewsletter(post) {
   fs.writeFileSync(SENT_CACHE_FILE, JSON.stringify(sentPosts));
   if (fs.existsSync(PROGRESS_FILE)) fs.unlinkSync(PROGRESS_FILE);
 }
+
 
 async function checkMediumFeed() {
   if (isProcessing) return console.log("⏳ Already sending emails, skipping this cycle...");
