@@ -9,6 +9,7 @@ require("dotenv").config();
 const { JSDOM } = require("jsdom");
 const createDOMPurify = require("dompurify");
 const marked = require("marked");
+
 const EMAIL_TEMPLATE_PATH = "./template/emailTemplate.html";
 const emailTemplateContent = fs.readFileSync(EMAIL_TEMPLATE_PATH, "utf-8");
 
@@ -76,7 +77,7 @@ function getSummary(url) {
 // Load and render email template
 function loadEmailTemplate(post, summaryMarkdown) {
   const summaryHTML = marked.parse(summaryMarkdown);
-  const cleanHTML = DOMPurify.sanitize(summaryHTML); 
+  const cleanHTML = DOMPurify.sanitize(summaryHTML);
   return emailTemplateContent
     .replace("{{title}}", post.title)
     .replace("{{summary}}", cleanHTML)
@@ -85,8 +86,22 @@ function loadEmailTemplate(post, summaryMarkdown) {
 
 async function sendNewsletter(post) {
   const postKey = `${post.title}-${post.link}`;
-  let subscribers = await Subscriber.find({});
-  if (subscribers.length === 0) return console.log("⚠️ No subscribers");
+
+  // Prevent resending if already marked sent
+  if (sentPosts.includes(postKey)) {
+    console.log("📭 Post already marked sent. Skipping send.");
+    return;
+  }
+
+  // Mark post as sent early to prevent re-sending
+  sentPosts.push(postKey);
+  fs.writeFileSync(SENT_CACHE_FILE, JSON.stringify(sentPosts));
+
+  const subscribers = await Subscriber.find({});
+  if (subscribers.length === 0) {
+    console.log("⚠️ No subscribers to send to.");
+    return;
+  }
 
   const summary = getSummary(post.link);
   const html = loadEmailTemplate(post, summary);
@@ -119,13 +134,13 @@ async function sendNewsletter(post) {
     }
   }
 
-  // Check for new subscribers after original run
+  // Check for new subscribers who joined during the process
   const finalSubs = await Subscriber.find({});
   const finalEmails = finalSubs.map((s) => s.email);
+  const missedEmails = finalEmails.filter((email) => !sentEmails.has(email));
 
-  const missedEmails = finalEmails.filter(email => !sentEmails.has(email));
   if (missedEmails.length) {
-    console.log(`🔁 Sending missed emails to ${missedEmails.length} new/missed subscriber(s)...`);
+    console.log(`🔁 Sending to ${missedEmails.length} new/missed subscriber(s)...`);
     for (let email of missedEmails) {
       const mailOptions = {
         from: `"Ansh Raj" <${process.env.FROM_EMAIL}>`,
@@ -148,13 +163,14 @@ async function sendNewsletter(post) {
     }
   }
 
-  sentPosts.push(postKey);
-  fs.writeFileSync(SENT_CACHE_FILE, JSON.stringify(sentPosts));
+  // Clear progress tracker
   if (fs.existsSync(PROGRESS_FILE)) fs.unlinkSync(PROGRESS_FILE);
 }
 
 async function checkMediumFeed() {
-  if (isProcessing) return console.log("⏳ Already sending emails, skipping this cycle...");
+  if (isProcessing) {
+    return console.log("⏳ Already sending emails, skipping this cycle...");
+  }
   isProcessing = true;
 
   try {
