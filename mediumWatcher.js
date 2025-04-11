@@ -84,6 +84,7 @@ function loadEmailTemplate(post, summaryMarkdown) {
 }
 
 async function sendNewsletter(post) {
+  const postKey = `${post.title}-${post.link}`;
   let subscribers = await Subscriber.find({});
   if (subscribers.length === 0) return console.log("⚠️ No subscribers");
 
@@ -91,7 +92,7 @@ async function sendNewsletter(post) {
   const html = loadEmailTemplate(post, summary);
 
   const sentEmails = new Set();
-  const startIndex = sendProgress?.postId === post.guid ? sendProgress.lastIndex + 1 : 0;
+  const startIndex = sendProgress?.postId === postKey ? sendProgress.lastIndex + 1 : 0;
 
   for (let i = startIndex; i < subscribers.length; i++) {
     const sub = subscribers[i];
@@ -107,7 +108,7 @@ async function sendNewsletter(post) {
       await transporter.sendMail(mailOptions);
       console.log(`✅ Sent to ${sub.email} (${i + 1}/${subscribers.length})`);
       sentEmails.add(sub.email);
-      fs.writeFileSync(PROGRESS_FILE, JSON.stringify({ postId: post.guid, lastIndex: i }));
+      fs.writeFileSync(PROGRESS_FILE, JSON.stringify({ postId: postKey, lastIndex: i }));
     } catch (err) {
       console.error(`❌ Email failed to ${sub.email}`, err);
     }
@@ -147,11 +148,10 @@ async function sendNewsletter(post) {
     }
   }
 
-  sentPosts.push(post.guid);
+  sentPosts.push(postKey);
   fs.writeFileSync(SENT_CACHE_FILE, JSON.stringify(sentPosts));
   if (fs.existsSync(PROGRESS_FILE)) fs.unlinkSync(PROGRESS_FILE);
 }
-
 
 async function checkMediumFeed() {
   if (isProcessing) return console.log("⏳ Already sending emails, skipping this cycle...");
@@ -160,8 +160,9 @@ async function checkMediumFeed() {
   try {
     const feed = await parser.parseURL(FEED_URL);
     const latestPost = feed.items[0];
+    const postKey = `${latestPost.title}-${latestPost.link}`;
 
-    if (!sentPosts.includes(latestPost.guid) || (sendProgress && sendProgress.postId === latestPost.guid)) {
+    if (!sentPosts.includes(postKey) || (sendProgress && sendProgress.postId === postKey)) {
       await sendNewsletter(latestPost);
     } else {
       console.log("📭 No new Medium post.");

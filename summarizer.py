@@ -43,7 +43,7 @@ def summarize_with_gemini(text):
     try:
         model = genai.GenerativeModel("gemini-2.0-flash")
         prompt = (
-            "Summarize the blog post in a concise, engaging tone for an email newsletter. "
+            "Summarize the blog post in a concise, engaging tone for an email newsletter without giving subject. "
             "Keep key points short and formatted. Use **bold** and *italic* where helpful."
         )
         response = model.generate_content(f"{prompt}\n\n{text}")
